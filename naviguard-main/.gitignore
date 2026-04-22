@@ -1,0 +1,12 @@
+# Node
+node_modules/
+dist/
+.env
+
+# Rust
+target/
+**/*.rs.bk
+
+# IDE
+.vscode/
+.DS_Store

@@ -1,0 +1,3 @@
+{
+  "deploy:pvm": "npx tsx scripts/deploy_risk_module.ts"
+}
