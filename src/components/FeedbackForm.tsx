@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Send, User, Mail, Globe, Phone, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { db, auth, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export function FeedbackForm() {
   const [submitted, setSubmitted] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
   
   const developerInfo = {
     name: "Bui Anh Kiet",
@@ -15,10 +19,27 @@ export function FeedbackForm() {
     mobile: "+84345973017"
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+    if (!message.trim() || isSending) return;
+
+    setIsSending(true);
+    const path = 'feedback';
+    try {
+      await addDoc(collection(db, path), {
+        message: message.trim(),
+        createdAt: serverTimestamp(),
+        userId: auth.currentUser?.uid || null,
+        userEmail: auth.currentUser?.email || null,
+      });
+      setSubmitted(true);
+      setMessage('');
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, path);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -86,25 +107,28 @@ export function FeedbackForm() {
               <label className="text-[10px] uppercase font-mono text-white/30 tracking-widest">Message Segment</label>
               <textarea 
                 required
-                className="w-full bg-[#141517] border border-white/10 rounded-lg p-4 text-sm focus:border-blue-500 outline-none transition-all min-h-[160px]"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                disabled={isSending || submitted}
+                className="w-full bg-[#141517] border border-white/10 rounded-lg p-4 text-sm focus:border-blue-500 outline-none transition-all min-h-[160px] disabled:opacity-50"
                 placeholder="Submit your tactical feedback or feature requests..."
               />
             </div>
             
             <button 
               type="submit"
-              disabled={submitted}
+              disabled={isSending || submitted || !message.trim()}
               className={cn(
                 "w-full py-4 rounded-lg font-bold uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-3",
-                submitted ? "bg-green-600" : "bg-blue-600 hover:bg-blue-500"
+                submitted ? "bg-green-600" : (isSending ? "bg-blue-600/50 cursor-wait" : "bg-blue-600 hover:bg-blue-500")
               )}
             >
               {submitted ? (
                 <>Transmission Received</>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
-                  Submit Protocol
+                  <Send className={cn("w-4 h-4", isSending && "animate-pulse")} />
+                  {isSending ? 'Sending...' : 'Submit Protocol'}
                 </>
               )}
             </button>

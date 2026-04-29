@@ -1,25 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, Radar, BarChart3, Upload, Compass, 
   Globe, Info, ExternalLink, MessageSquare, 
-  Wallet, Activity, Anchor
+  Activity, Anchor, LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Benchmarker } from './components/Benchmarker';
 import { MetricChart } from './components/MetricCharts';
 import { DatasetUploader } from './components/DatasetUpload';
 import { FeedbackForm } from './components/FeedbackForm';
+import { Analytics } from './components/Analytics';
+import { HackathonDocs } from './components/HackathonDocs';
+import { auth } from './lib/firebase';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from 'firebase/auth';
 
-type Page = 'dashboard' | 'benchmark' | 'datasets' | 'analytics' | 'feedback';
+type Page = 'dashboard' | 'benchmark' | 'datasets' | 'analytics' | 'feedback' | 'docs';
 
 export default function App() {
   const [activePage, setActivePage] = useState<Page>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [account, setAccount] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  const connectWallet = async () => {
-    // Mock wallet connection for demo purposes
-    setAccount("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const login = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   // Mock data for analytics
@@ -96,7 +119,8 @@ export default function App() {
           <NavItem 
             icon={<Info />} 
             label="Hackathon Docs" 
-            onClick={() => {}}
+            active={activePage === 'docs'}
+            onClick={() => setActivePage('docs')}
             collapsed={!isSidebarOpen}
           />
         </div>
@@ -133,17 +157,28 @@ export default function App() {
             </a>
             
             <div className="flex items-center gap-3 pl-6 border-l border-white/5">
-               {!account ? (
+               {!user ? (
                  <button 
-                    onClick={connectWallet}
+                    onClick={login}
                     className="px-4 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-xs font-bold uppercase flex items-center gap-2 transition-all"
                  >
-                   <Wallet size={14} /> Connect Wallet
+                   <Shield size={14} /> Protocol Login
                  </button>
                ) : (
-                 <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-[10px] font-mono text-white/60 tracking-wider">0x742D...F44E</span>
+                 <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="text-[10px] font-mono text-white/60 tracking-wider">
+                          {user.email?.split('@')[0]}
+                        </span>
+                    </div>
+                    <button 
+                      onClick={logout}
+                      className="p-2 text-white/40 hover:text-white transition-colors"
+                      title="Terminate Session"
+                    >
+                      <LogOut size={14} />
+                    </button>
                  </div>
                )}
             </div>
@@ -187,8 +222,9 @@ export default function App() {
 
            {activePage === 'benchmark' && <Benchmarker />}
            {activePage === 'datasets' && <DatasetUploader onUpload={(data) => console.log(data)} />}
-           {activePage === 'analytics' && <MetricChart data={performanceData} title="Global Security Analytics" type="radar" />}
+           {activePage === 'analytics' && <Analytics />}
            {activePage === 'feedback' && <FeedbackForm />}
+           {activePage === 'docs' && <HackathonDocs />}
         </div>
 
         {/* Global Footer Meta */}

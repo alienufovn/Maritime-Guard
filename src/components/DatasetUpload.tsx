@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Upload, CheckCircle2, AlertCircle } from 'lucide-react';
 import Papa from 'papaparse';
 import { cn } from '@/lib/utils';
@@ -46,7 +46,7 @@ export function DatasetUploader({ onUpload }: DatasetUploaderProps) {
       </h3>
       
       <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragOver={(e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}
@@ -60,7 +60,7 @@ export function DatasetUploader({ onUpload }: DatasetUploaderProps) {
           ref={fileInputRef} 
           className="hidden" 
           accept=".csv,.json"
-          onChange={(e) => e.target.files && handleFile(e.target.files[0])}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => e.target.files && handleFile(e.target.files[0])}
         />
         
         <div className="p-6 bg-white/5 rounded-full mb-6 group-hover:scale-110 transition-transform">

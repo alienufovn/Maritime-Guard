@@ -1,0 +1,5 @@
+timestamp,node_id,block_height,extrinsic_count,finalized_block,cpu_usage_pct,memory_usage_mb,network_latency_ms,status
+2023-10-27T10:00:01Z,westend-validator-01,18440201,12,18440198,45.2,4096,12.5,active
+2023-10-27T10:00:07Z,westend-validator-01,18440202,8,18440200,48.1,4110,14.1,active
+2023-10-27T10:00:13Z,westend-validator-01,18440203,24,18440201,62.5,4200,18.9,syncing
+2023-10-27T10:00:19Z,westend-validator-01,18440204,5,18440203,39.8,4080,11.2,active

@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User submitted tactical feedback for Naviguard protocol.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Auth UID of the submitter (optional if anonymous)" },
+        "userEmail": { "type": "string", "description": "Email of the submitter" },
+        "message": { "type": "string", "description": "The tactical feedback message" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of submission" }
+      },
+      "required": ["message", "createdAt"]
+    },
+    "BenchmarkResult": {
+      "title": "BenchmarkResult",
+      "description": "Record of a task execution and LLM response.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "taskId": { "type": "string" },
+        "taskName": { "type": "string" },
+        "model": { "type": "string" },
+        "text": { "type": "string" },
+        "latency": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["taskId", "model", "text", "latency", "timestamp"]
+    }
+  },
+  "firestore": {
+    "feedback/{feedbackId}": {
+      "schema": "Feedback",
+      "description": "User feedback collection"
+    },
+    "benchmarks/{benchmarkId}": {
+      "schema": "BenchmarkResult",
+      "description": "Comparative benchmark execution history"
+    }
+  }
+}

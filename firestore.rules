@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net: Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Feedback Protocol ---
+    function isValidFeedback(data) {
+      return data.keys().hasAll(['message', 'createdAt'])
+        && (data.keys().size() >= 2 && data.keys().size() <= 4)
+        && data.message is string && data.message.size() >= 5 && data.message.size() <= 2000
+        && data.createdAt == request.time
+        && (!data.keys().hasAny(['userId']) || data.userId == request.auth.uid)
+        && (!data.keys().hasAny(['userEmail']) || (data.userEmail is string && data.userEmail.size() <= 256));
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if isValidFeedback(incoming());
+      // Only owners or staff (if we had them) can read feedback
+      allow get: if isOwner(existing().get('userId', ''));
+      allow list: if isSignedIn() && resource.data.get('userId', '') == request.auth.uid;
+      // Feedback is immutable once sent
+      allow update, delete: if false;
+    }
+
+    // --- Benchmark Execution logs ---
+    function isValidBenchmarkResult(data) {
+      return data.keys().hasAll(['taskId', 'model', 'text', 'latency', 'timestamp'])
+        && (data.keys().size() >= 5 && data.keys().size() <= 7)
+        && data.taskId is string && data.taskId.size() <= 128
+        && data.model is string && data.model.size() <= 128
+        && data.text is string && data.text.size() <= 20000
+        && data.latency is number
+        && data.timestamp == request.time
+        && (!data.keys().hasAny(['userId']) || data.userId == request.auth.uid);
+    }
+
+    match /benchmarks/{benchmarkId} {
+      allow create: if isValidBenchmarkResult(incoming());
+      allow get: if isOwner(existing().get('userId', ''));
+      allow list: if isSignedIn() && resource.data.get('userId', '') == request.auth.uid;
+      // Records of security audits must not be tampered with
+      allow update, delete: if false;
+    }
+  }
+}

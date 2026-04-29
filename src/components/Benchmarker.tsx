@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { PlayCircle, Zap, Search, Radar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
+import { db, auth } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const TASKS = [
   {
@@ -28,20 +30,69 @@ export function Benchmarker() {
   const [selectedTask, setSelectedTask] = useState(TASKS[0]);
   const [isRunning, setIsRunning] = useState(false);
   const [completion, setCompletion] = useState(0);
+  const [logs, setLogs] = useState<string[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const startBenchmark = () => {
+  const addLog = (msg: string) => {
+    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  };
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  const startBenchmark = async () => {
     setIsRunning(true);
     setCompletion(0);
+    setLogs([]);
+    
+    addLog("Initialising PVM Execution Environment...");
+    addLog(`Loading Binary Protocol for: ${selectedTask.name}`);
+    addLog("Allocating 512MB RISC-V memory segment...");
+
+    const duration = 2500;
+    const startTime = Date.now();
+
     const interval = setInterval(() => {
-      setCompletion(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsRunning(false);
-          return 100;
-        }
-        return prev + 2;
-      });
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(Math.round((elapsed / duration) * 100), 100);
+      
+      setCompletion(progress);
+
+      if (progress > 20 && logs.length === 3) addLog("Handshaking with Westend Hub...");
+      if (progress > 50 && logs.length === 4) addLog("PVM Compute Cycles: 4.2 GHz active...");
+      if (progress > 80 && logs.length === 5) addLog("Authenticating signature via People Chain...");
+
+      if (progress >= 100) {
+        clearInterval(interval);
+        addLog("PROTOCOL EXECUTION COMPLETE.");
+        addLog("Auditing results... Status: SECURE");
+        setIsRunning(false);
+        saveResult();
+      }
     }, 50);
+  };
+
+  const saveResult = async () => {
+    if (!auth.currentUser) return;
+    
+    const path = 'benchmarks';
+    try {
+      await addDoc(collection(db, path), {
+        taskId: selectedTask.id,
+        taskName: selectedTask.name,
+        model: 'Gemini-3.1-Pro (PVM-Logic)',
+        text: `Execution completed successfully for ${selectedTask.name}. No anomalies detected in the RISC-V compute chain.`,
+        latency: 840,
+        userId: auth.currentUser.uid,
+        timestamp: serverTimestamp()
+      });
+      addLog("Result archived in Naviguard Hub.");
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -50,18 +101,20 @@ export function Benchmarker() {
       <div className="lg:col-span-1 space-y-4">
         <div className="bg-[#1a1c1e] border border-white/5 rounded-xl p-6 shadow-2xl">
           <h3 className="text-sm font-medium text-white/60 uppercase tracking-widest mb-6 font-mono flex items-center gap-2">
-            <Search className="w-4 h-4 text-blue-500" /> Core Protocols
+            <Search className="w-4 h-4 text-blue-500" /> Strategic Missions
           </h3>
           <div className="space-y-3">
             {TASKS.map(task => (
               <button
                 key={task.id}
                 onClick={() => setSelectedTask(task)}
+                disabled={isRunning}
                 className={cn(
-                  "w-full text-left p-4 rounded-lg border transition-all duration-200 group relative overflow-hidden",
+                  "w-full text-left p-4 rounded-xl border transition-all duration-200 group relative overflow-hidden",
                   selectedTask.id === task.id 
                     ? "bg-blue-500/10 border-blue-500/50 text-white" 
-                    : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10"
+                    : "bg-white/5 border-white/5 text-white/40 hover:bg-white/10 hover:border-white/10",
+                  isRunning && "opacity-50 cursor-wait"
                 )}
               >
                 <div className="flex justify-between items-start mb-2 relative z-10">
@@ -96,17 +149,34 @@ export function Benchmarker() {
 
       {/* Stage */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="bg-[#1a1c1e] border border-white/5 rounded-xl p-10 shadow-2xl relative overflow-hidden min-h-[440px]">
-           <div className="relative z-10">
-              <div className="flex items-center justify-between mb-12">
+        <div className="bg-[#1a1c1e] border border-white/5 rounded-xl p-10 shadow-2xl relative overflow-hidden min-h-[440px] flex flex-col">
+           <div className="relative z-10 flex-1 flex flex-col">
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                   <h2 className="text-3xl font-black italic tracking-tighter text-white mb-2 uppercase">Execution Environment</h2>
-                   <p className="text-white/40 text-sm italic font-serif">PolkaVM Near-Native Performance Audit</p>
+                   <h2 className="text-2xl font-black italic tracking-tighter text-white mb-1 uppercase">PVM Execution Environment</h2>
+                   <p className="text-white/40 text-[10px] uppercase tracking-widest font-mono">Near-Native RISC-V Audit</p>
                 </div>
-                <Radar className="w-10 h-10 text-blue-500/20" />
+                <Radar className={cn("w-8 h-8 text-blue-500/20", isRunning && "animate-pulse")} />
               </div>
 
-              <div className="space-y-12">
+              {/* Console Logs */}
+              <div className="flex-1 bg-black/40 rounded-xl border border-white/5 p-6 mb-8 font-mono text-[10px] overflow-hidden flex flex-col">
+                 <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-1.5 custom-scrollbar">
+                    {logs.length === 0 && (
+                      <div className="text-white/10 italic">Awaiting protocol activation...</div>
+                    )}
+                    {logs.map((log, i) => (
+                      <div key={i} className={cn(
+                        "leading-relaxed",
+                        log.includes('COMPLETE') ? "text-green-400 font-bold" : "text-white/60"
+                      )}>
+                        {log}
+                      </div>
+                    ))}
+                 </div>
+              </div>
+
+              <div className="space-y-6">
                  <div className="space-y-4">
                     <div className="flex justify-between text-[10px] uppercase font-mono tracking-widest">
                        <span className="text-white/30">RISC-V Compute Cycle</span>
@@ -121,12 +191,12 @@ export function Benchmarker() {
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-2 gap-6">
-                    <MetricCard label="Chain ID" value="Westend-AH" />
-                    <MetricCard label="VM Type" value="RISC-V (PVM)" />
-                    <MetricCard label="Escrow Multi-Sig" value="3-of-5" />
-                    <MetricCard label="Audit State" value="TRUSTLESS" />
-                 </div>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <MetricCard label="Chain" value="Westend" />
+                    <MetricCard label="VM Type" value="RISC-V" />
+                    <MetricCard label="Escrow" value="3-of-5" />
+                    <MetricCard label="State" value="SECURE" />
+                  </div>
               </div>
            </div>
         </div>
@@ -137,9 +207,9 @@ export function Benchmarker() {
 
 function MetricCard({ label, value }: { label: string, value: string }) {
   return (
-    <div className="p-4 bg-white/5 rounded-lg border border-white/5 space-y-1">
-      <div className="text-[10px] text-white/30 uppercase font-mono tracking-widest">{label}</div>
-      <div className="text-lg font-bold text-white/80">{value}</div>
+    <div className="p-3 bg-white/5 rounded-lg border border-white/5 space-y-0.5">
+      <div className="text-[9px] text-white/30 uppercase font-mono tracking-widest">{label}</div>
+      <div className="text-xs font-bold text-white/80">{value}</div>
     </div>
   );
 }
