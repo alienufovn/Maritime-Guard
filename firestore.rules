@@ -12,6 +12,11 @@ service cloud.firestore {
     function isSignedIn() { return request.auth != null; }
     function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { 
+      return isSignedIn() 
+        && request.auth.token.email_verified == true 
+        && request.auth.token.email == 'bui.anh.kiet.29.04.1975@gmail.com'; 
+    }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
@@ -28,11 +33,11 @@ service cloud.firestore {
 
     match /feedback/{feedbackId} {
       allow create: if isValidFeedback(incoming());
-      // Only owners or staff (if we had them) can read feedback
-      allow get: if isOwner(existing().get('userId', ''));
-      allow list: if isSignedIn() && resource.data.get('userId', '') == request.auth.uid;
+      // Only owners or admins can read feedback
+      allow get: if isOwner(existing().get('userId', '')) || isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && resource.data.get('userId', '') == request.auth.uid);
       // Feedback is immutable once sent
-      allow update, delete: if false;
+      allow update, delete: if isAdmin();
     }
 
     // --- Benchmark Execution logs ---
@@ -49,10 +54,10 @@ service cloud.firestore {
 
     match /benchmarks/{benchmarkId} {
       allow create: if isValidBenchmarkResult(incoming());
-      allow get: if isOwner(existing().get('userId', ''));
-      allow list: if isSignedIn() && resource.data.get('userId', '') == request.auth.uid;
+      allow get: if isOwner(existing().get('userId', '')) || isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && resource.data.get('userId', '') == request.auth.uid);
       // Records of security audits must not be tampered with
-      allow update, delete: if false;
+      allow update, delete: if isAdmin();
     }
   }
 }

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { PlayCircle, Zap, Search, Radar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
-import { db, auth } from '@/lib/firebase';
+import { db, auth, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const TASKS = [
@@ -91,7 +91,7 @@ export function Benchmarker() {
       });
       addLog("Result archived in Naviguard Hub.");
     } catch (err) {
-      console.error(err);
+      handleFirestoreError(err, OperationType.WRITE, path);
     }
   };
 

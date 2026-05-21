@@ -3,8 +3,8 @@ import {
   Activity, TrendingUp, Shield, 
   AlertTriangle, CheckCircle2, Clock, Zap
 } from 'lucide-react';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, auth } from '@/lib/firebase';
 import { 
   XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, AreaChart, Area, BarChart, Bar 
@@ -15,7 +15,31 @@ export function Analytics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'benchmarks'), orderBy('timestamp', 'desc'), limit(20));
+    if (!auth.currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    // Admins can see everything, but for common users we enforce the query filter
+    // to satisfy the security rules' Query Enforcer pattern.
+    const isAdmin = auth.currentUser.email === 'bui.anh.kiet.29.04.1975@gmail.com';
+    
+    let q;
+    if (isAdmin) {
+      q = query(
+        collection(db, 'benchmarks'), 
+        orderBy('timestamp', 'desc'), 
+        limit(20)
+      );
+    } else {
+      q = query(
+        collection(db, 'benchmarks'), 
+        where('userId', '==', auth.currentUser.uid),
+        orderBy('timestamp', 'desc'), 
+        limit(20)
+      );
+    }
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
