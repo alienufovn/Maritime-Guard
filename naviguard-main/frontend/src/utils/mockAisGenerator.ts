@@ -46,7 +46,7 @@ export const triggerMockRiskEvent = (vesselAddress: string, onEvent: (data: any)
 
   // Simulate network latency (500ms - 1500ms)
   setTimeout(() => {
-    onEvent(mockEvent);
+    onEvent({ aisData: data, eventPayload: mockEvent });
   }, 500 + Math.random() * 1000);
 
   return data;

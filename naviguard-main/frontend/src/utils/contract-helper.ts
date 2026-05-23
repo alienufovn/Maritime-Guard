@@ -55,4 +55,14 @@ export class NaviGuardContract {
       return 0;
     }
   }
+
+  /**
+   * Encodes AIS data into hex format for PVM consumption.
+   */
+  static encodeAisData(data: any): string {
+    const jsonString = JSON.stringify(data);
+    return ethers.hexlify(ethers.toUtf8Bytes(jsonString));
+  }
 }
+
+export const encodeAisData = NaviGuardContract.encodeAisData;
