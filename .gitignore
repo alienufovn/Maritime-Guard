@@ -1,4 +1,5 @@
 node_modules/
 __pycache__/
 *.zip
-.env
+.env.local
+.env.example
