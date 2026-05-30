@@ -1,20 +1,25 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+Youtube's clip video on my youtube channel named HaveHolySpirits for this the LLMs Benchmark hackathon examination https://youtu.be/lTmWgv2AwyA
 
-# Run and deploy your AI Studio app
+demo run on The online Google AI Studio lab tool : [https://obscure-succotash-x6x79g6vjvg39v54-3000.app.github.dev/](https://ai.studio/apps/80219f22-ae6b-487d-9eed-6f48825e4936?fullscreenApplet=true)
 
-This contains everything you need to run your app locally.
+# NaviGuard: Trustless Maritime Escrow
+Overview
+NaviGuard is a decentralized insurance and escrow protocol designed for the maritime industry. It leverages the Polkadot Hub to provide high-performance risk assessment and instant liquidity for vessel-related transactions.
 
-View your app in AI Studio: https://ai.studio/apps/80219f22-ae6b-487d-9eed-6f48825e4936
+# Tech Stack
+Smart Contracts: Solidity (EVM) for the frontend logic + Rust (PVM) for high-performance risk calculation.
 
-## Run Locally
+Compiler: resolc (Solidity to PVM compiler).
 
-**Prerequisites:**  Node.js
+Chain: Polkadot Asset Hub (Westend Testnet).
 
+Interoperability: XCM for People Chain identity verification.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Frontend: React + Scaffold-DOT + viem.
+
+# Key Features
+Dual-VM Architecture: Uses the EVM layer for user-facing escrow logic while offloading heavy maritime risk scoring to PolkaVM (PVM) for near-native execution speed.
+
+Native Asset Escrow: Supports native USDT and DOT on Asset Hub without wrapping, reducing counterparty risk.
+
+Identity-Verified Claims: Claims are only processed if the vessel owner has a "Verified Mariner" status on the People Chain.
