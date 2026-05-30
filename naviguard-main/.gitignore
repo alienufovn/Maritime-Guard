@@ -10,3 +10,8 @@ target/
 # IDE
 .vscode/
 .DS_Store
+node_modules/
+__pycache__/
+*.zip
+.env.local
+.env.example

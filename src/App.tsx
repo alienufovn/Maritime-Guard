@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Shield, Radar, BarChart3, Upload, Compass, 
   Globe, Info, ExternalLink, MessageSquare, 
-  Activity, Anchor, LogOut
+  Activity, Anchor, LogOut, Database
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Benchmarker } from './components/Benchmarker';
@@ -11,10 +11,12 @@ import { DatasetUploader } from './components/DatasetUpload';
 import { FeedbackForm } from './components/FeedbackForm';
 import { Analytics } from './components/Analytics';
 import { HackathonDocs } from './components/HackathonDocs';
+import { DatabaseHub } from './components/DatabaseHub';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from 'firebase/auth';
+import { Toaster } from 'sonner';
 
-type Page = 'dashboard' | 'benchmark' | 'datasets' | 'analytics' | 'feedback' | 'docs';
+type Page = 'dashboard' | 'benchmark' | 'datasets' | 'database' | 'analytics' | 'feedback' | 'docs';
 
 export default function App() {
   const [activePage, setActivePage] = useState<Page>('dashboard');
@@ -91,6 +93,13 @@ export default function App() {
             label="Data Ingestion" 
             active={activePage === 'datasets'} 
             onClick={() => setActivePage('datasets')}
+            collapsed={!isSidebarOpen}
+          />
+          <NavItem 
+            icon={<Database />} 
+            label="DB Connections" 
+            active={activePage === 'database'} 
+            onClick={() => setActivePage('database')}
             collapsed={!isSidebarOpen}
           />
           <NavItem 
@@ -221,6 +230,7 @@ export default function App() {
            )}
 
            {activePage === 'benchmark' && <Benchmarker />}
+           {activePage === 'database' && <DatabaseHub />}
            {activePage === 'datasets' && <DatasetUploader onUpload={(data) => console.log(data)} />}
            {activePage === 'analytics' && <Analytics />}
            {activePage === 'feedback' && <FeedbackForm />}
@@ -242,6 +252,7 @@ export default function App() {
           </div>
         </footer>
       </main>
+      <Toaster theme="dark" position="bottom-right" />
     </div>
   );
 }

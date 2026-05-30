@@ -9,10 +9,14 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, AreaChart, Area, BarChart, Bar 
 } from 'recharts';
+import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
+import { useRef } from 'react';
 
 export function Analytics() {
   const [benchmarks, setBenchmarks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -41,6 +45,19 @@ export function Analytics() {
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!isInitialLoad.current) {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const docData = change.doc.data();
+            toast.success(`Benchmark Logged: ${docData.taskName || 'Task'}`, {
+              description: `${docData.model || 'System'} completed processing.`
+            });
+          }
+        });
+      } else {
+        isInitialLoad.current = false;
+      }
+
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -60,6 +77,18 @@ export function Analytics() {
     { label: "Anomalies Caught", value: "0", icon: <AlertTriangle className="text-yellow-400" /> },
     { label: "Protocol Integrity", value: "Verified", icon: <CheckCircle2 className="text-blue-500" /> }
   ];
+
+  if (!auth.currentUser) {
+     return (
+       <div className="flex flex-col items-center justify-center h-96 gap-4 text-center">
+         <Shield className="w-16 h-16 text-blue-500/20" />
+         <h3 className="text-lg font-bold uppercase tracking-widest font-mono text-white/80">Secured Database Partition</h3>
+         <p className="text-xs text-white/40 max-w-sm font-serif italic">
+           To view real-time intelligence feeds, you must first authenticate with the system using Protocol Login in the header.
+         </p>
+       </div>
+     );
+  }
 
   if (loading) {
      return (
@@ -139,16 +168,24 @@ export function Analytics() {
                   </tr>
                </thead>
                <tbody className="divide-y divide-white/5">
-                  {benchmarks.slice(0, 5).map((b, i) => (
-                    <tr key={i} className="hover:bg-white/5 transition-colors">
-                       <td className="p-4 text-white/80 font-bold">{b.taskName}</td>
-                       <td className="p-4">{b.model}</td>
-                       <td className="p-4">{b.timeStr}</td>
-                       <td className="p-4">
-                          <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-[10px] font-bold">STABLE</span>
-                       </td>
-                    </tr>
-                  ))}
+                  <AnimatePresence initial={false}>
+                    {benchmarks.slice(0, 5).map((b, i) => (
+                      <motion.tr 
+                         key={b.id || i}
+                         initial={{ opacity: 0, x: -20 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         transition={{ duration: 0.3, ease: 'easeOut' }}
+                         className="hover:bg-white/5 transition-colors"
+                      >
+                         <td className="p-4 text-white/80 font-bold">{b.taskName}</td>
+                         <td className="p-4">{b.model}</td>
+                         <td className="p-4">{b.timeStr}</td>
+                         <td className="p-4">
+                            <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 text-[10px] font-bold">STABLE</span>
+                         </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
                </tbody>
             </table>
          </div>

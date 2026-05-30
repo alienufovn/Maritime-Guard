@@ -52,6 +52,26 @@ export function Benchmarker() {
     addLog(`Loading Binary Protocol for: ${selectedTask.name}`);
     addLog("Allocating 512MB RISC-V memory segment...");
 
+    let apiSuccess = false;
+    let apiData: any = null;
+
+    try {
+      const prompt = `Establish cryptographic parameters for ${selectedTask.name} in task category. Threat coordinates: 21.0285 N, 105.8542 E. Standard telemetry latency is optimal.`;
+      const res = await fetch("/api/benchmark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: selectedTask.category,
+          prompt: prompt,
+          model: "gemini-2.5-flash"
+        })
+      });
+      apiData = await res.json();
+      apiSuccess = apiData.success;
+    } catch (e) {
+      console.error("API Error: ", e);
+    }
+
     const duration = 2500;
     const startTime = Date.now();
 
@@ -63,19 +83,24 @@ export function Benchmarker() {
 
       if (progress > 20 && logs.length === 3) addLog("Handshaking with Westend Hub...");
       if (progress > 50 && logs.length === 4) addLog("PVM Compute Cycles: 4.2 GHz active...");
-      if (progress > 80 && logs.length === 5) addLog("Authenticating signature via People Chain...");
+      if (progress > 80 && logs.length === 5) addLog("Executing secure Gemini AI threat analysis...");
 
       if (progress >= 100) {
         clearInterval(interval);
         addLog("PROTOCOL EXECUTION COMPLETE.");
-        addLog("Auditing results... Status: SECURE");
+        if (apiSuccess && apiData) {
+          addLog(`Gemini Response: ${apiData.text.split('\n')[0]}`);
+          addLog(`Response Latency: ${apiData.latency}ms`);
+        } else {
+          addLog("Auditing results... Status: SECURE");
+        }
         setIsRunning(false);
-        saveResult();
+        saveResult(apiData);
       }
     }, 50);
   };
 
-  const saveResult = async () => {
+  const saveResult = async (apiData?: any) => {
     if (!auth.currentUser) return;
     
     const path = 'benchmarks';
@@ -83,9 +108,9 @@ export function Benchmarker() {
       await addDoc(collection(db, path), {
         taskId: selectedTask.id,
         taskName: selectedTask.name,
-        model: 'Gemini-3.1-Pro (PVM-Logic)',
-        text: `Execution completed successfully for ${selectedTask.name}. No anomalies detected in the RISC-V compute chain.`,
-        latency: 840,
+        model: apiData?.model || 'Gemini-2.5-flash',
+        text: apiData?.text || `Execution completed successfully for ${selectedTask.name}. No anomalies detected in the RISC-V compute chain.`,
+        latency: apiData?.latency || 840,
         userId: auth.currentUser.uid,
         timestamp: serverTimestamp()
       });

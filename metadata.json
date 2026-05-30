@@ -1,0 +1,6 @@
+{
+  "name": "NaviGuard Analytics",
+  "description": "Analytics dashboard for NaviGuard with secure database connectivity and Model Context Protocol support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
